@@ -2,8 +2,8 @@ from tkinter.filedialog import *
 from tkinter import *
 import PIL.Image, PIL.ImageTk
 
-from test.network import Network
-from test.neuron import Neuron
+from neural.network import Network
+from neural.neuron import Neuron
 
 
 def quit(ev):

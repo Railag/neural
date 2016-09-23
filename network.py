@@ -1,8 +1,8 @@
 import os
 
-from test.neuron import Neuron
-from test.alphabet import Alphabet
-from test.result import Result
+from neural.neuron import Neuron
+from neural.alphabet import Alphabet
+from neural.result import Result
 
 
 class Network:
