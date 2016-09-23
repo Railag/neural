@@ -66,26 +66,6 @@ class Neuron:
         if again:
             self.teach(callback)
 
-    def update_weights(self, tmp_matrix, plus):
-        i = 0
-        j = 0
-
-        while i < self.height:
-            while j < self.width:
-                value = tmp_matrix[i][j]
-                self.handle_pixel(i, j, value, plus)
-
-                j += 1
-            i += 1
-            j = 0
-
-    def handle_pixel(self, j, i, param, valid):
-        if param == 1:
-            if valid:
-                self.matrix[j][i] += 1
-            else:
-                self.matrix[j][i] -= 1
-
     def get_matrix(self):
         i = 0
         j = 0
@@ -124,17 +104,6 @@ class Neuron:
 
         return result, sum
 
-    def teach_image(self, tmp_matrix, valid):
-        result, sum = self.check_image(tmp_matrix)
-
-        if result != valid:
-            if not result and valid:
-                self.update_weights(tmp_matrix, True)
-            elif result and not valid:
-                self.update_weights(tmp_matrix, False)
-
-        return result, sum
-
     def teach_file(self, filename, valid, callback):
 
         if not os.path.isfile(filename):
@@ -142,8 +111,39 @@ class Neuron:
 
         img, tmp_matrix = Neuron.prepare_image(self, filename)
 
-        result, sum = self.teach_image(tmp_matrix, valid)
+        result, sum = self.__teach_image(tmp_matrix, valid)
 
         callback(self)
 
         return result, valid
+
+    def __update_weights(self, tmp_matrix, plus):
+        i = 0
+        j = 0
+
+        while i < self.height:
+            while j < self.width:
+                value = tmp_matrix[i][j]
+                self.__handle_pixel(i, j, value, plus)
+
+                j += 1
+            i += 1
+            j = 0
+
+    def __handle_pixel(self, j, i, param, valid):
+        if param == 1:
+            if valid:
+                self.matrix[j][i] += 1
+            else:
+                self.matrix[j][i] -= 1
+
+    def __teach_image(self, tmp_matrix, valid):
+        result, sum = self.check_image(tmp_matrix)
+
+        if result != valid:
+            if not result and valid:
+                self.__update_weights(tmp_matrix, True)
+            elif result and not valid:
+                self.__update_weights(tmp_matrix, False)
+
+        return result, sum

@@ -26,11 +26,11 @@ class Network:
 
         img, tmp_matrix = Neuron.prepare_image(self.neurons[0], filename)
 
-        result = self.analyze(tmp_matrix)
+        result = self.__analyze(tmp_matrix)
 
         return img, result
 
-    def analyze(self, tmp_matrix):
+    def __analyze(self, tmp_matrix):
         result_wrappers = []
 
         for neuron in self.neurons:
