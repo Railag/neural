@@ -2,6 +2,7 @@ from tkinter.filedialog import *
 from tkinter import *
 import PIL.Image, PIL.ImageTk
 
+from test.network import Network
 from test.neuron import Neuron
 
 
@@ -13,11 +14,12 @@ def quit(ev):
 def teach(ev):
     w0 = int(wText.get("1.0", END))
 
-    neuron.setup_w0(w0)
-    neuron.teach(teach_callback)
+    network.setup_w0(w0)
+
+    network.teach(teach_callback)
 
 
-def teach_callback():
+def teach_callback(neuron):
     textbox.insert('1.0', neuron.get_matrix())
 
 
@@ -26,15 +28,17 @@ def load_file(ev):
     if fn == '':
         return
 
-    result, sum, img = neuron.handle_file(fn)
+    img, result = network.handle_file(fn)
 
     canvas.background = PIL.ImageTk.PhotoImage(img)
-    imagesprite = canvas.create_image(0, 0, image=canvas.background, anchor="nw")
+    canvas.create_image(0, 0, image=canvas.background, anchor="nw")
 
     textbox.insert('1.0', "\n")
-    textbox.insert('1.0', "Valid = " + str(result))
+    textbox.insert('1.0', "Neuron with " + result.neuron.letter.upper() + " letter")
     textbox.insert('1.0', "\n")
-    textbox.insert('1.0', "Sum = " + str(sum))
+    textbox.insert('1.0', "Valid = " + str(result.result))
+    textbox.insert('1.0', "\n")
+    textbox.insert('1.0', "Sum = " + str(result.sum))
     textbox.insert('1.0', "\n")
 
 
@@ -43,7 +47,7 @@ root = Tk()
 width = 5
 height = 8
 
-neuron = Neuron(width, height)
+network = Network(width, height)
 
 panelFrame = Frame(root, height=60, bg='gray')
 imageFrame = Frame(root, height=80, width=50, bg='red')

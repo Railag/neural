@@ -4,23 +4,59 @@ import PIL.Image, PIL.ImageTk
 
 
 class Neuron:
-    def __init__(self, width, height):
+    def __init__(self, width, height, letter):
         self.width = width
         self.height = height
         self.matrix = [[0 for x in range(width)] for y in range(height)]
+        self.letter = letter
 
     def setup_w0(self, w0):
         self.w0 = w0
+
+    @staticmethod
+    def prepare_image(neuron, filename):
+        try:
+            img = PIL.Image.open(filename)
+        except OSError as e:
+            return
+
+        rgb_im = img.convert('RGB')
+
+        size = 125, 200
+
+        img = img.transform(size, PIL.Image.EXTENT, (0, 0, 5, 8))
+
+        tmp_matrix = [[0 for x in range(neuron.w0)] for y in range(neuron.height)]
+
+        i = 0
+        j = 0
+
+        while i < neuron.height:
+            while j < neuron.width:
+                r, g, b = rgb_im.getpixel((j, i))
+                white = r == 255
+                if white:
+                    tmp_matrix[i][j] = 0
+                else:
+                    tmp_matrix[i][j] = 1
+
+                j += 1
+            i += 1
+            j = 0
+
+        return img, tmp_matrix
 
     def teach(self, callback):
         again = False
         i = 0
         while i < 12:
-            result, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/true/image" + str(i) + ".bmp", True,
+            result, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/true/image" + str(i) + self.letter + ".bmp",
+                                            True,
                                             callback)  # valid
             if result != valid:  # false for valid image
                 again = True
-            result2, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/false/n" + str(i) + ".bmp", False,
+            result2, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/false/n" + str(i) + self.letter + ".bmp",
+                                             False,
                                              callback)  # invalid
             if result2 != valid:  # true for invalid image
                 again = True
@@ -67,35 +103,7 @@ class Neuron:
 
         return line
 
-    def process_image(self, filename, w0, teach, valid):
-        try:
-            img = PIL.Image.open(filename)
-        except OSError as e:
-            return
-
-        rgb_im = img.convert('RGB')
-
-        size = 125, 200
-
-        img = img.transform(size, PIL.Image.EXTENT, (0, 0, 5, 8))
-
-        tmp_matrix = [[0 for x in range(w0)] for y in range(self.height)]
-
-        i = 0
-        j = 0
-
-        while i < self.height:
-            while j < self.width:
-                r, g, b = rgb_im.getpixel((j, i))
-                white = r == 255
-                if white:
-                    tmp_matrix[i][j] = 0
-                else:
-                    tmp_matrix[i][j] = 1
-
-                j += 1
-            i += 1
-            j = 0
+    def check_image(self, tmp_matrix):
 
         sum = 0
         i = 0
@@ -112,32 +120,30 @@ class Neuron:
             j = 0
 
         print(sum)
-        result = sum > w0
+        result = sum > self.w0
 
-        if teach and result != valid:
+        return result, sum
+
+    def teach_image(self, tmp_matrix, valid):
+        result, sum = self.check_image(tmp_matrix)
+
+        if result != valid:
             if not result and valid:
                 self.update_weights(tmp_matrix, True)
             elif result and not valid:
                 self.update_weights(tmp_matrix, False)
 
-        return result, sum, img
-
-    def handle_file(self, filename):
-
-        if not os.path.isfile(filename):
-            return
-
-        result, sum, img = self.process_image(filename, self.w0, False, False)
-
-        return result, sum, img
+        return result, sum
 
     def teach_file(self, filename, valid, callback):
 
         if not os.path.isfile(filename):
             return False, False
 
-        result, sum, img = self.process_image(filename, self.w0, True, valid)
+        img, tmp_matrix = Neuron.prepare_image(self, filename)
 
-        callback()
+        result, sum = self.teach_image(tmp_matrix, valid)
+
+        callback(self)
 
         return result, valid
