@@ -39,4 +39,11 @@ class Network:
 
         result_wrappers.sort(key=lambda x: x.sum, reverse=True)
 
+        result_string = ""
+        for result_wrapper in result_wrappers:
+            if result_wrapper.result:
+                result_string += "\n Letter: " + result_wrapper.neuron.letter + " =" + str(result_wrapper.sum)
+
+        print("results: " + result_string)
+
         return result_wrappers[0]

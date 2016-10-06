@@ -2,6 +2,8 @@ import os
 
 import PIL.Image, PIL.ImageTk
 
+from neural.alphabet import Alphabet
+
 
 class Neuron:
     def __init__(self, width, height, letter):
@@ -47,24 +49,36 @@ class Neuron:
         return img, tmp_matrix
 
     def teach(self, callback):
+        lettersCounter = 0
+        while lettersCounter < Alphabet.length:
+            currentLetter = Alphabet.letters[lettersCounter]
+            self.teach_letter(callback, currentLetter)
+
+            lettersCounter += 1
+
+    def teach_letter(self, callback, currentLetter):
         again = False
+
         i = 0
-        while i < 12:
+        while i < 10:
             result, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/true/image" + str(i) + self.letter + ".bmp",
                                             True,
                                             callback)  # valid
             if result != valid:  # false for valid image
                 again = True
-            result2, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/false/n" + str(i) + self.letter + ".bmp",
-                                             False,
-                                             callback)  # invalid
-            if result2 != valid:  # true for invalid image
-                again = True
+                #    result2, valid = self.teach_file("C:\\Users/Railag/Downloads/bpp/false/n" + str(i) + ".bmp",
+            if currentLetter != self.letter:
+                result2, valid = self.teach_file(
+                    "C:\\Users/Railag/Downloads/bpp/true/image" + str(i) + currentLetter + ".bmp",
+                    False,
+                    callback)  # invalid
+                if result2 != valid:  # true for invalid image
+                    again = True
 
             i += 1
 
         if again:
-            self.teach(callback)
+            self.teach_letter(callback, currentLetter)
 
     def get_matrix(self):
         i = 0
