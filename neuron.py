@@ -113,7 +113,7 @@ class Neuron:
             i += 1
             j = 0
 
-        print(sum)
+        #print(sum)
         result = sum > self.w0
 
         return result, sum

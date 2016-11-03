@@ -22,6 +22,20 @@ def teach(ev):
 def teach_callback(neuron):
     textbox.insert('1.0', neuron.get_matrix())
 
+def recognize_line(ev):
+    fn = Open(root, filetypes=[('*.bmp files', '.bmp')]).show()
+    if fn == '':
+        return
+
+    img, result_line = network.handle_file_line(fn)
+
+    canvas.background = PIL.ImageTk.PhotoImage(img)
+    canvas.create_image(0, 0, image=canvas.background, anchor="nw")
+
+    textbox.insert('1.0', "\n")
+    textbox.insert('1.0', "Result line: " + result_line)
+    textbox.insert('1.0', "\n")
+
 
 def load_file(ev):
     fn = Open(root, filetypes=[('*.bmp files', '.bmp')]).show()
@@ -73,14 +87,18 @@ textbox.pack()
 
 startBtn = Button(panelFrame, text='Teach')
 loadBtn = Button(panelFrame, text='Load')
+recognizeBtn = Button(panelFrame, text='Recognize')
 quitBtn = Button(panelFrame, text='Quit')
 
 startBtn.bind("<Button-1>", teach)
 loadBtn.bind("<Button-1>", load_file)
+recognizeBtn.bind("<Button-1>", recognize_line)
 quitBtn.bind("<Button-1>", quit)
 
 loadBtn.place(x=10, y=10, width=40, height=40)
-quitBtn.place(x=110, y=10, width=40, height=40)
 startBtn.place(x=60, y=10, width=40, height=40)
+recognizeBtn.place(x=110, y=10, width=80, height=40)
+quitBtn.place(x=200, y=10, width=40, height=40)
+
 
 root.mainloop()
