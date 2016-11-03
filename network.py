@@ -115,39 +115,30 @@ class Network:
 
             if begin_x != -1:
 
-                letter_real_width = Network.calculate_letter_real_width(begin_x, line_matrix, img_width, img_height)
-
-                end_x = begin_x + letter_real_width
-
-                right_space_width, left_space_width = Network.calculate_letter_spaces(letter_real_width, end_x,
-                                                                                      line_matrix, letter_width,
-                                                                                      letter_height)
+                end_x = begin_x + Alphabet.letter_width
 
                 letter_matrix = [[0 for x in range(letter_width)] for y in range(letter_height)]
 
-                start = begin_x - left_space_width
-                end = end_x + right_space_width
-
-                k = start
+                k = begin_x
                 index = 0
 
                 while index < img_height:
                     width_index = 0
 
-                    while k * (index + 1) < end * (index + 1):
+                    while k * (index + 1) < end_x * (index + 1):
                         letter_matrix[index][width_index] = line_matrix[index][k]
 
                         k += 1
                         width_index += 1
 
                     index += 1
-                    k = start
+                    k = begin_x
 
                 letter_result = self.__analyze(letter_matrix)
 
                 recognized_line += letter_result.neuron.letter
 
-                begin_x = end_x + right_space_width
+                begin_x = end_x
 
             else:
                 return recognized_line
@@ -173,69 +164,3 @@ class Network:
             j = 0
 
         return begin_width
-
-    @staticmethod
-    def calculate_letter_real_width(begin_width, line_matrix, img_width, img_height):
-        real_width = 0
-        new_real_width = 0
-
-        i = begin_width
-        j = 0
-
-        while i < img_width:
-            while j < img_height:
-                value = line_matrix[j][i]
-                if value == 1:
-                    new_real_width += 1
-                    break
-
-                j += 1
-
-            if new_real_width == real_width:
-                return real_width
-            else:
-                real_width = new_real_width
-
-            i += 1
-            j = 0
-
-        return real_width
-
-    @staticmethod
-    def calculate_letter_spaces(letter_real_width, end_width, line_matrix, letter_width, letter_height):
-
-        letter_spaces_width = letter_width - letter_real_width
-        min_letter_space_width = 1
-
-        if letter_spaces_width == 0:
-            return 0, 0  # full width letter
-
-        if letter_spaces_width == min_letter_space_width:
-            return min_letter_space_width, 0  # 1 pixel for spaces -> right space
-
-        max_space_width = letter_spaces_width - min_letter_space_width
-
-        if max_space_width == 1:
-            return min_letter_space_width, min_letter_space_width  # 2 pixels -> 1 + 1
-
-        right_space_width = 1
-
-        i = end_width
-        j = 0
-        while i - end_width < max_space_width:
-
-            while j < letter_height:
-                value = line_matrix[j][i]
-                if value == 1:
-                    left_space_width = letter_spaces_width - right_space_width
-                    return right_space_width, left_space_width
-
-                j += 1
-
-            i += 1
-            right_space_width += 1
-
-            j = 0
-
-        left_space_width = letter_spaces_width - right_space_width
-        return right_space_width, left_space_width

@@ -66,7 +66,7 @@ network = Network(width, height)
 panelFrame = Frame(root, height=60, bg='gray')
 imageFrame = Frame(root, height=80, width=50, bg='red')
 textFrame = Frame(root, height=34, width=60)
-image2Frame = Frame(root, height=200)
+image2Frame = Frame(root, height=200, width=200)
 
 panelFrame.pack(side='top', fill='both')
 image2Frame.pack()
