@@ -1,166 +1,101 @@
 import os
+import random
 
+from neural.neural_math import NeuralMath
 from neural.neuron import Neuron
-from neural.alphabet import Alphabet
-from neural.result import Result
-import PIL.Image, PIL.ImageTk
+from neural.config import Config
+
+curr_value = 0
 
 
 class Network:
-    def __init__(self, width, height):
+    def __init__(self):
         self.neurons = []
-        for char in Alphabet.letters:
-            self.neurons.append(Neuron(width, height, char))
+        self.V = []
+        self.T = Config.start_T
 
-    def setup_w0(self, w0):
-        for neuron in self.neurons:
-            neuron.setup_w0(w0)
+        for i in range(0, Config.neurons_count):
+            self.neurons.append(Neuron())
+            self.V.append(random.uniform(Config.min_w, Config.max_w))
 
-    def teach(self, callback):
-        for neuron in self.neurons:
-            neuron.teach(callback)
+    def teach(self, all_values):
+        global curr_value
 
-    def handle_file(self, filename):
+        E = 1
+        y = 0
 
-        if not os.path.isfile(filename):
-            return
+        ys = []
+        expected_values = []
 
-        img, tmp_matrix = Neuron.prepare_image(self.neurons[0], filename)
+        while E > Config.Em and y == 0:
 
-        result = self.__analyze(tmp_matrix)
+            while curr_value < len(all_values):
 
-        return img, result
+                values = Network.get_next_values(curr_value, all_values)
+                expected_value = Network.get_next_predict(all_values)
 
-    def __analyze(self, tmp_matrix):
-        result_wrappers = []
+                sums = []
+                for neuron in self.neurons:
+                    sums.append(neuron.sum(values))
 
-        for neuron in self.neurons:
-            result, sum = neuron.check_image(tmp_matrix)
-            result_wrappers.append(Result(neuron, result, sum))
+                S = self.inner_sum(sums)
+                y = NeuralMath.calculate_y(S)
+                print(y)
 
-        result_wrappers.sort(key=lambda x: x.sum, reverse=True)
+                ys.append(y)
+                expected_values.append(expected_value)
 
-        result_string = ""
-        for result_wrapper in result_wrappers:
-            if result_wrapper.result:
-                result_string += "\n Letter: " + result_wrapper.neuron.letter + " =" + str(result_wrapper.sum)
 
-        print("results: " + result_string)
+            E = NeuralMath.calculate_E(ys, expected_values)
 
-        return result_wrappers[0]
-
-    def handle_file_line(self, filename):
-        if not os.path.isfile(filename):
-            return
-
-        img, line_matrix, img_size = Network.prepare_line_image(filename)
-
-        result_string = self.__recognize_line(line_matrix, img_size[0], img_size[1])
-
-        return img, result_string
-
-    @staticmethod
-    def prepare_line_image(filename):
-        try:
-            img = PIL.Image.open(filename)
-        except OSError as e:
-            return
-
-        rgb_im = img.convert('RGB')
-
-        img_size = img.size
-
-        img_width = img_size[0]
-        img_height = img_size[1]
-
-        size = img_width * 5, img_height * 5
-
-        img = img.transform(size, PIL.Image.EXTENT, (0, 0, img_width, img_height))
-
-        line_matrix = [[0 for x in range(img_width)] for y in range(img_height)]
-
-        i = 0
-        j = 0
-
-        while i < img_height:
-            while j < img_width:
-                r, g, b = rgb_im.getpixel((j, i))
-                white = r == 255
-                if white:
-                    line_matrix[i][j] = 0
-                else:
-                    line_matrix[i][j] = 1
-
-                j += 1
-            i += 1
-            j = 0
-
-        return img, line_matrix, img_size
-
-    def __recognize_line(self, line_matrix, img_width, img_height):
-        recognized_line = ""
-
-        begin_x = 0
-        end_x = 0
-
-        letter_width = self.neurons[0].width
-        letter_height = self.neurons[0].height
-
-        while begin_x < img_width:
-
-            begin_x = Network.find_begin_width(begin_x, line_matrix, img_width, img_height)
-
-            if begin_x - end_x == Alphabet.space_width and end_x != 0:
-                recognized_line += " "
-
-            if begin_x != -1:
-
-                end_x = begin_x + Alphabet.letter_width
-
-                letter_matrix = [[0 for x in range(letter_width)] for y in range(letter_height)]
-
-                k = begin_x
-                index = 0
-
-                while index < img_height:
-                    width_index = 0
-
-                    while k * (index + 1) < end_x * (index + 1):
-                        letter_matrix[index][width_index] = line_matrix[index][k]
-
-                        k += 1
-                        width_index += 1
-
-                    index += 1
-                    k = begin_x
-
-                letter_result = self.__analyze(letter_matrix)
-
-                recognized_line += letter_result.neuron.letter
-
-                begin_x = end_x
-
+            if E < Config.Em:
+                return y
             else:
-                return recognized_line
+                curr_value = 0
+                E = 0
+                y = 0
+                self.update_weights(ys, expected_values, sums, all_values)
 
-        return recognized_line
+    def update_weights(self, y, t, yi, values):
+        for i in range(0, Config.neurons_count):
+            self.V[i] = NeuralMath.update_V(self.V[i], Config.alpha, y, t, yi[i])
 
-    @staticmethod
-    def find_begin_width(i, line_matrix, img_width, img_height):
-        begin_width = -1
+        self.T = NeuralMath.update_T(self.T, Config.alpha, y, t)
 
         j = 0
+        for neuron in self.neurons:
+            for i in range(0, Config.k):
+                neuron.w[i] = NeuralMath.update_W(neuron.w[i], y, t, yi[i], self.V[i], values[i], yi[i])
 
-        while i < img_width:
-            while j < img_height:
-                value = line_matrix[j][i]
-                if value == 1:
-                    begin_width = i
-                    i = img_width
-                    break
+            neuron.T = NeuralMath.update_Tu(neuron.T, y, t, yi[j], self.V[j], yi[j])
+            j += 1
 
-                j += 1
+    def inner_sum(self, values):
+
+        sum = 0
+        i = 0
+
+        for value in values:
+            sum += value * self.V[i]
             i += 1
-            j = 0
 
-        return begin_width
+        result = sum - self.T
+
+        return result
+
+    @staticmethod
+    def get_next_predict(y):
+        global curr_value
+        if len(y) > curr_value:
+            return y[curr_value + Config.k - 1]
+        else:
+            return -1
+
+    @staticmethod
+    def get_next_values(i, y):
+        global curr_value
+        if len(y) > i + Config.k:
+            curr_value += 1
+            return y[i:i + Config.k]
+        else:
+            return y[i:len(y)]
